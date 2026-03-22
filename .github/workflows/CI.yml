@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - webio-ci-debug
     tags: '*'
 jobs:
   test:
