@@ -1,4 +1,6 @@
 using Mux, JSON, Mustache
+# JSON.jl >= 1 marks `json` as public but does not export it
+using JSON: json
 import HTTP: WebSocket
 import HTTP.WebSockets: isclosed
 

@@ -22,7 +22,8 @@ handlers.eval = function(data, c) {
         result: result
       }
     }
-    c.write(JSON.stringify(result));
+    // one message per line: JSON.jl >= 1 cannot read a message from a stream that stays open
+    c.write(JSON.stringify(result) + '\n');
   }
 }
 

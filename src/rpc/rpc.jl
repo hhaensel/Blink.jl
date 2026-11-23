@@ -1,6 +1,7 @@
-import JSExpr: @js, @js_str, JSString, jsstring, jsexpr, @var, @new
+import JSExpr
+import JSExpr: @js, @js_str, JSString
 
-export js, @js, @js_, @var, @new
+export js, @js, @js_
 
 # include("jsexprs.jl")
 
@@ -16,7 +17,7 @@ Base.showerror(io::IO, e::JSError) =
 
 # RPC API
 
-export js, js_, @js, @js_, @var, @new
+export js, js_, @js, @js_
 
 """
     js(win, expr::JSString; callback=false)
@@ -62,7 +63,11 @@ function js(o, js::JSString; callback = true)
   end
 end
 
-js(o, j; callback=true) = js(o, JSString(string(jsstring(j)...)); callback=callback)
+js(o, j::Expr; callback=true) = error(
+    "Blink.js cannot translate a Julia expression at runtime with JSExpr >= 1. " *
+    "Use `@js win expr`, or pass a `JSString` (e.g. `js\"...\"`)."
+)
+js(o, j; callback=true) = js(o, JSString(string(j)); callback=callback)
 
 """
     @js win expr
@@ -83,7 +88,7 @@ julia> @js_ win for i in 1:x console.log(i) end
 ```
 """
 macro js(o, ex)
-    :(js($(esc(o)), $(esc(Expr(:quote, ex)))))
+    :(js($(esc(o)), $(esc(Expr(:macrocall, GlobalRef(JSExpr, Symbol("@js")), __source__, ex)))))
 end
 
 """
@@ -106,5 +111,5 @@ julia> @js_ win for i in 1:x console.log(i) end
 ```
 """
 macro js_(o, ex)
-    :(js($(esc(o)), $(esc(Expr(:quote, ex))), callback=false))
+    :(js($(esc(o)), $(esc(Expr(:macrocall, GlobalRef(JSExpr, Symbol("@js")), __source__, ex))), callback=false))
 end

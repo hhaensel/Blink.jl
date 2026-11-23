@@ -106,7 +106,8 @@ function initcbs(shell)
   enable_callbacks!(shell)
   @async begin
     while active(shell) && !eof(shell.sock)  # check for eof to prevent errors during shutdown
-      @errs handle_message(shell, JSON.parse(shell.sock))
+      # one message per line, see main.js (JSON.jl >= 1 reads a stream until EOF)
+      @errs handle_message(shell, JSON.parse(readline(shell.sock)))
     end
   end
 end

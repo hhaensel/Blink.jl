@@ -1,6 +1,7 @@
 using ..Blink
-import Blink: js, id, stopserve
-import JSExpr: JSString, jsstring
+import Blink: js, id, stopserve, @js, @js_
+import JSExpr: JSString
+import JSON
 import Base: position, size, close
 
 export Window, flashframe, shell, progress, title,
@@ -99,8 +100,9 @@ end
 
 Window(args...; kwargs...) = Window(shell(), args...; kwargs...)
 
-dot(a::Electron, win::Integer, code; callback = true) =
-  js(a, :(withwin($(win), $(jsstring(code)...))),
+# `code` is JavaScript (a `JSString`) that is evaluated with the window as `this`.
+dot(a::Electron, win::Integer, code::JSString; callback = true) =
+  js(a, JSString(string("withwin(", win, ", ", JSON.json(code.s), ")")),
      callback = callback)
 
 dot(w::Window, code; callback = true) =
@@ -109,11 +111,13 @@ dot(w::Window, code; callback = true) =
 dot_(args...) = dot(args..., callback = false)
 
 macro dot(win, code)
-  :(dot($(esc(win)), $(esc(Expr(:quote, Expr(:., :this, QuoteNode(code)))))))
+  ex = Expr(:., :this, QuoteNode(code))
+  :(dot($(esc(win)), $(esc(Expr(:macrocall, GlobalRef(Blink.JSExpr, Symbol("@js")), __source__, ex)))))
 end
 
 macro dot_(win, code)
-  :(dot_($(esc(win)), $(esc(Expr(:quote, Expr(:., :this, QuoteNode(code)))))))
+  ex = Expr(:., :this, QuoteNode(code))
+  :(dot_($(esc(win)), $(esc(Expr(:macrocall, GlobalRef(Blink.JSExpr, Symbol("@js")), __source__, ex)))))
 end
 
 # Base.* methods
@@ -273,7 +277,7 @@ msg(win::Window, m) = msg(win.content, m)
 
 js(win::Window, s::JSString; callback = true) =
   active(win.content) ? js(win.content, s, callback = callback) :
-    dot(win, :(this.webContents.executeJavaScript($(s.s))), callback = callback)
+    dot(win, JSString(string("this.webContents.executeJavaScript(", JSON.json(s.s), ")")), callback = callback)
 
 const initcss = """
   <style>html,body{margin:0;padding:0;border:0;text-align:center;}</style>
